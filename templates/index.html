@@ -1,0 +1,60 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Communication Skill Evaluator</title>
+  <script>
+document.addEventListener("DOMContentLoaded", function () {
+    const levelSelect = document.querySelector("select[name='level']");
+    const questionTextarea = document.querySelector("textarea[name='question']");
+
+    levelSelect.addEventListener("change", function () {
+        const level = this.value;
+        fetch("/question", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ level: level })
+        })
+        .then(response => response.json())
+        .then(data => {
+            questionTextarea.value = data.question;
+        });
+    });
+
+    levelSelect.dispatchEvent(new Event('change'));
+});
+</script>
+
+</head>
+<body>
+  <h2>🧠 Candidate Communication Skill Evaluation</h2>
+  <form method="POST">
+    <label for="level">Select Candidate Level:</label>
+    <select name="level" required>
+      <option value="intern">Intern</option>
+      <option value="associate">Associate</option>
+      <option value="software engineer">Software Engineer</option>
+    </select><br><br>
+
+    <label for="question">Paste your question:</label><br>
+    <textarea name="question" rows="3" cols="60">{{ question or '' }}</textarea><br><br>
+
+    <label for="answer">Your Answer:</label><br>
+    <textarea name="answer" rows="6" cols="60" required></textarea><br><br>
+
+    <button type="submit">Evaluate</button>
+  </form>
+
+  {% if result %}
+    <h3>📊 Evaluation Results:</h3>
+    <p><strong>Grade:</strong> {{ result.grade }}</p>
+    <ul>
+      {% for key, value in result.raw_features.items() %}
+        <li>{{ key }}: {{ value|round(2) }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</body>
+</html>
