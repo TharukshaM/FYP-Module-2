@@ -53,12 +53,12 @@ class TechnicalEvaluator:
         question_row = subset.sort_values("score_diff").iloc[0]
         
         return {
-            "question": question_row["question_text"],
-            "expected_answer": question_row["expected_answer"],
-            "complexity_score": question_row["complexity_score"],
-            "technology": question_row["technology"],
-            "bloom_label": question_row["bloom_label"],
-            "question_id": question_row.name
+            "question": str(question_row["question_text"]),
+            "expected_answer": str(question_row["expected_answer"]),
+            "complexity_score": float(question_row["complexity_score"]),
+            "technology": str(question_row["technology"]),
+            "bloom_label": str(question_row["bloom_label"]),
+            "question_id": int(question_row.name)
         }
     
     def evaluate_technical_answer(self, question, expected_answer, candidate_answer):
@@ -136,21 +136,19 @@ class TechnicalEvaluator:
         )
         
         # Combine results
-        result = {
-            "technical_accuracy": tech_eval["correctness"],
-            "semantic_similarity": tech_eval.get("semantic_similarity", 0.0),
-            "current_complexity": question_data["complexity_score"],
-            "next_complexity": next_complexity,
-            "technology": question_data["technology"],
-            "bloom_level": question_data["bloom_label"],
+        return {
+            "technical_accuracy": float(tech_eval["correctness"]),
+            "semantic_similarity": float(tech_eval.get("semantic_similarity", 0.0)),
+            "current_complexity": float(question_data["complexity_score"]),
+            "next_complexity": float(next_complexity),
+            "technology": str(question_data["technology"]),
+            "bloom_level": str(question_data["bloom_label"]),
             "answer_analysis": {
-                "word_count": tech_eval.get("answer_length", 0),
-                "technical_terms": tech_eval.get("has_technical_terms", 0),
-                "completeness": self._assess_completeness(candidate_answer, question_data["expected_answer"])
+                "word_count": int(tech_eval.get("answer_length", 0)),
+                "technical_terms": int(tech_eval.get("has_technical_terms", 0)),
+                "completeness": float(self._assess_completeness(candidate_answer, question_data["expected_answer"]))
             }
         }
-        
-        return result
     
     def _count_technical_terms(self, text):
         """Count technical terms in the answer"""

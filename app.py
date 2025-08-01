@@ -5,9 +5,14 @@ from utils.question_selector import get_question_by_level
 from utils.evaluation_logic import evaluate_answer
 from utils.enums import ExperienceLevel
 from utils.technical_evaluator import technical_evaluator
+from utils.json_encoder import convert_numpy_types, CustomJSONEncoder
+import traceback
 
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend integration
+
+# Set custom JSON encoder
+app.json = CustomJSONEncoder(app)
 
 # Load communication skills model
 model_bundle = load_model()
@@ -63,63 +68,82 @@ def evaluate_communication():
 @app.route("/technical/question", methods=["POST"])
 def get_technical_question():
     """Get a technical question based on level and skills"""
-    data = request.get_json()
-    level = data.get("level", "intern").lower()
-    skills = data.get("skills", ["java", "react"])  # Default skills
-    current_complexity = data.get("current_complexity", None)
-    
-    question_data = technical_evaluator.get_technical_question(
-        experience_level=level,
-        skills=skills,
-        current_complexity=current_complexity
-    )
-    
-    return jsonify({
-        "question": question_data["question"],
-        "complexity_score": question_data["complexity_score"],
-        "technology": question_data["technology"],
-        "bloom_label": question_data["bloom_label"],
-        "question_id": question_data["question_id"],
-        "type": "technical"
-    })
+    try:
+        data = request.get_json()
+        level = data.get("level", "intern").lower()
+        skills = data.get("skills", ["java", "react"])  # Default skills
+        current_complexity = data.get("current_complexity", None)
+        
+        question_data = technical_evaluator.get_technical_question(
+            experience_level=level,
+            skills=skills,
+            current_complexity=current_complexity
+        )
+        
+        # Convert numpy types to native Python types
+        response_data = convert_numpy_types({
+            "question": question_data["question"],
+             "expected_answer": question_data["expected_answer"],
+            "complexity_score": question_data["complexity_score"],
+            "technology": question_data["technology"],
+            "bloom_label": question_data["bloom_label"],
+            "question_id": question_data["question_id"],
+            "type": "technical"
+        })
+        
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"Error in get_technical_question: {e}")
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/technical/evaluation", methods=["POST"])
 def evaluate_technical():
     """Evaluate technical skills answer"""
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "Missing JSON body"}), 400
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Missing JSON body"}), 400
 
-    level = data.get("level", "intern").lower()
-    question = data.get("question", "")
-    answer = data.get("answer", "")
-    expected_answer = data.get("expected_answer", "")
-    complexity_score = data.get("complexity_score", 2.0)
-    technology = data.get("technology", "general")
-    bloom_label = data.get("bloom_label", "")
+        level = data.get("level", "intern").lower()
+        question = data.get("question", "")
+        answer = data.get("answer", "")
+        expected_answer = data.get("expected_answer", "")
+        complexity_score = data.get("complexity_score", 2.0)
+        technology = data.get("technology", "general")
+        bloom_label = data.get("bloom_label", "")
 
-    # Create question data structure
-    question_data = {
-        "question": question,
-        "expected_answer": expected_answer,
-        "complexity_score": complexity_score,
-        "technology": technology,
-        "bloom_label": bloom_label
-    }
+        # Create question data structure
+        question_data = {
+            "question": question,
+            "expected_answer": expected_answer,
+            "complexity_score": complexity_score,
+            "technology": technology,
+            "bloom_label": bloom_label
+        }
 
-    # Get comprehensive evaluation
-    result = technical_evaluator.get_comprehensive_evaluation(
-        question_data=question_data,
-        candidate_answer=answer,
-        experience_level=level
-    )
+        # Get comprehensive evaluation
+        result = technical_evaluator.get_comprehensive_evaluation(
+            question_data=question_data,
+            candidate_answer=answer,
+            experience_level=level
+        )
 
-    return jsonify({
-        "evaluation": result,
-        "question": question,
-        "level": level,
-        "type": "technical"
-    })
+        # Convert numpy types to native Python types
+        response_data = convert_numpy_types({
+            "evaluation": result,
+            "question": question,
+            "level": level,
+            "type": "technical"
+        })
+
+        return jsonify(response_data)
+        
+    except Exception as e:
+        print(f"Error in evaluate_technical: {e}")
+        print(traceback.format_exc())
+        return jsonify({"error": str(e)}), 500
 
 # === COMBINED ASSESSMENT ROUTES ===
 
